@@ -21,7 +21,6 @@ START_TIME = datetime.now()
 sessions = {}
 SESSION_TTL = 86400
 
-# ---------- credentials ----------
 def load_credentials():
     try:
         with open(CREDS_FILE) as f:
@@ -75,28 +74,35 @@ body{
   font-family:'Vazirmatn',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   color:#e0e0e0;overflow:hidden;
-}
-.bg-layer{position:fixed;inset:0;z-index:0}
-.bg-gradient{
-  position:absolute;inset:0;
   background:linear-gradient(135deg,#060610,#0f0f2e,#0a0a20,#060610);
   background-size:400% 400%;animation:gradientShift 12s ease infinite;
-  z-index:2;
 }
 @keyframes gradientShift{
   0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}
 }
-.bg-video{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  z-index:1;opacity:0.35;
+.particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,58,237,0.3),transparent);
+  animation:floatUp linear infinite;
 }
-.overlay{position:fixed;inset:0;z-index:3;display:flex;align-items:center;justify-content:center}
+@keyframes floatUp{
+  0%{transform:translateY(100vh) scale(0);opacity:0}
+  10%{opacity:1}
+  90%{opacity:0.5}
+  100%{transform:translateY(-10vh) scale(1.5);opacity:0}
+}
+.overlay{
+  position:fixed;inset:0;z-index:3;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,rgba(10,10,40,0.3),rgba(5,5,15,0.8));
+}
 .card{
-  background:rgba(10,10,30,0.75);
+  background:rgba(10,10,30,0.8);
   backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
   border-radius:24px;padding:44px 38px;text-align:center;
   border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 100px rgba(124,58,237,0.08);
+  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 120px rgba(124,58,237,0.08);
   max-width:420px;width:90%;position:relative;
 }
 .logo{width:80px;height:80px;margin-bottom:16px;border-radius:18px;object-fit:contain}
@@ -134,12 +140,7 @@ h1{
 </style>
 </head>
 <body>
-<div class="bg-layer">
-  <div class="bg-gradient"></div>
-  <video autoplay muted loop playsinline class="bg-video">
-    <source src="/static/bg.mp4" type="video/mp4">
-  </video>
-</div>
+<div class="particles" id="particles"></div>
 <div class="overlay">
   <div class="card">
     <img src="/static/logo.png" alt="KMPanel" class="logo" onerror="this.style.display='none'">
@@ -159,7 +160,14 @@ h1{
     </form>
   </div>
 </div>
-<div class="foot">KMPanel v4 &middot; Secure Access</div>
+<div class="foot">KMPanel v5 &middot; Secure Access</div>
+<script>
+(function(){var c=document.getElementById('particles');
+for(var i=0;i<30;i++){var p=document.createElement('div');
+p.className='particle';var s=2+Math.random()*6;
+p.style.cssText='left:'+Math.random()*100+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+(8+Math.random()*15)+'s;animation-delay:'+Math.random()*10+'s';
+c.appendChild(p);}})();
+</script>
 </body>
 </html>"""
 
@@ -183,11 +191,11 @@ body{
   0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}
 }
 .card{
-  background:rgba(10,10,30,0.75);
+  background:rgba(10,10,30,0.8);
   backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
   border-radius:24px;padding:44px 40px;text-align:center;
   border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 100px rgba(124,58,237,0.06);
+  box-shadow:0 30px 80px rgba(0,0,0,0.7),0 0 120px rgba(124,58,237,0.06);
   max-width:540px;width:90%;
 }
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
@@ -253,7 +261,7 @@ body{
     <div class="cell"><div class="lbl">Port</div><div class="val">{{PORT}}</div></div>
     <div class="cell"><div class="lbl">Uptime</div><div class="val">{{UPTIME}}</div></div>
   </div>
-  <div class="foot">KMPanel v4 &middot; {{DATE}}</div>
+  <div class="foot">KMPanel v5 &middot; {{DATE}}</div>
 </div>
 </body>
 </html>"""
