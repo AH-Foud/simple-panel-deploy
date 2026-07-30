@@ -14,6 +14,7 @@ log_err()   { echo -e "${RED}[X]${NC} $1"; }
 
 REPO_RAW="https://raw.githubusercontent.com/AH-Foud/simple-panel-deploy/main"
 VIDEO_URL="https://app.zaro.ai/api/files/download?fid=a14f63fb-b9df-4a2a-b492-e8704b5eeaa4&exp=1785512902&sig=98_nsE9cHRZaOZQkISf3Hg"
+LOGO_URL="https://app.zaro.ai/api/files/download?fid=551bfdfb-63cc-4d2b-adfc-da922a267522&exp=1785513178&sig=Rph622uCaO0zgHB1dzur5w"
 
 banner() {
     echo ""
@@ -79,14 +80,12 @@ if [[ "$ACCESS_CHOICE" == "2" ]]; then
     echo -e "${YELLOW}   !!  DNS CHECK BEFORE CONTINUING${NC}"
     echo -e "${YELLOW}  ==========================================${NC}"
     echo ""
-    echo -e "  Make sure this A record exists in your DNS:"
-    echo -e "    ${BOLD}${SUBDOMAIN}${NC}  ->  ${BOLD}${VPS_IP}${NC}"
-    echo ""
-    echo -e "  ${YELLOW}Cloudflare users: Use DNS-only mode (gray cloud).${NC}"
+    echo -e "  Make sure this A record exists: ${BOLD}${SUBDOMAIN}${NC} -> ${BOLD}${VPS_IP}${NC}"
+    echo -e "  ${YELLOW}Cloudflare: Use DNS-only mode (gray cloud).${NC}"
     echo ""
     read -p "DNS record already set? [y/N]: " DNS_OK
     if [[ ! "$DNS_OK" =~ ^[Yy]$ ]]; then
-        log_warn "Set up the DNS A record first, then re-run this script."
+        log_warn "Set up DNS first, then re-run."
         exit 0
     fi
     HOST="$SUBDOMAIN"
@@ -105,7 +104,6 @@ echo -e "${CYAN}  --- Installation Summary ---${NC}"
 echo -e "  URL:       ${BOLD}http://${HOST}:${PANEL_PORT}${NC}"
 echo -e "  Username:  ${BOLD}${PANEL_USER}${NC}"
 echo -e "  Password:  ${BOLD}${PANEL_PASS}${NC}"
-echo -e "  CLI tool:  ${BOLD}kmpanel${NC}"
 echo ""
 
 read -p "Proceed with install? [Y/n]: " CONFIRM
@@ -136,29 +134,29 @@ curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/server.py" "${REPO_RAW}/
 log_ok "Server code downloaded"
 
 log_info "Downloading logo..."
-curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/static/logo.png" "${REPO_RAW}/assets/logo.png" 2>/dev/null && {
+curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/static/logo.png" "${LOGO_URL}" 2>/dev/null && {
     log_ok "Logo downloaded"
 } || {
     log_warn "Logo download failed — skipping"
 }
 
-log_info "Downloading background video (may take a moment)..."
+log_info "Downloading background video (~40MB)..."
 curl -s --connect-timeout 15 --max-time 120 -o "$APP_DIR/static/bg.mp4" "${VIDEO_URL}" 2>/dev/null && {
     VSIZE=$(stat -c%s "$APP_DIR/static/bg.mp4" 2>/dev/null || echo 0)
     if [[ "$VSIZE" -gt 10000 ]]; then
         log_ok "Video downloaded ($(( VSIZE / 1048576 ))MB)"
     else
-        log_warn "Video download incomplete — using CSS background"
+        log_warn "Video incomplete — using CSS fallback"
         rm -f "$APP_DIR/static/bg.mp4"
     fi
 } || {
-    log_warn "Video download failed — using CSS gradient background"
+    log_warn "Video download failed — using CSS gradient"
 }
 
 if python3 -c "import py_compile;py_compile.compile('$APP_DIR/server.py',doraise=True)" 2>/dev/null; then
     log_ok "Python syntax OK"
 else
-    log_err "Python syntax error in server.py"
+    log_err "Python syntax error"
     exit 1
 fi
 
@@ -170,7 +168,7 @@ CREDS_FILE="$APP_DIR/.credentials"
 CONFIG_FILE="$APP_DIR/.config"
 RED='\033[0;31m';GREEN='\033[0;32m';CYAN='\033[0;36m';BOLD='\033[1m';NC='\033[0m'
 if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo -e "${RED}KMPanel is not installed. Run the installer first.${NC}"
+    echo -e "${RED}Not installed. Run the installer first.${NC}"
     exit 1
 fi
 source <(grep -E '^(HOST|PORT)=' "$CONFIG_FILE")
@@ -179,70 +177,47 @@ PASSWORD=$(cut -d: -f2- "$CREDS_FILE" 2>/dev/null)
 
 show_status() {
     echo ""
-    echo -e "${CYAN}  ╔══════════════════════════════════╗${NC}"
-    echo -e "${CYAN}  ║         ${BOLD}K M P a n e l${NC}${CYAN}          ║${NC}"
-    echo -e "${CYAN}  ╚══════════════════════════════════╝${NC}"
+    echo -e "${CYAN}  K M P a n e l  v4${NC}"
     echo ""
-    echo -e "  ${BOLD}Panel URL:${NC}"
-    echo -e "    ${GREEN}http://${HOST}:${PORT}${NC}"
-    echo ""
-    echo -e "  ${BOLD}Username:${NC}  ${USERNAME}"
-    echo -e "  ${BOLD}Password:${NC}  ${PASSWORD}"
+    echo -e "  ${BOLD}URL:${NC}       ${GREEN}http://${HOST}:${PORT}${NC}"
+    echo -e "  ${BOLD}Username:${NC}   ${USERNAME}"
+    echo -e "  ${BOLD}Password:${NC}   ${PASSWORD}"
     echo ""
     if systemctl is-active --quiet simple-panel 2>/dev/null; then
-        echo -e "  ${BOLD}Status:${NC}    ${GREEN}Running${NC}"
+        echo -e "  ${BOLD}Status:${NC}     ${GREEN}Running${NC}"
     else
-        echo -e "  ${BOLD}Status:${NC}    ${RED}Stopped${NC}"
+        echo -e "  ${BOLD}Status:${NC}     ${RED}Stopped${NC}"
     fi
     echo ""
 }
 
 reset_password() {
     if [[ $EUID -ne 0 ]]; then
-        echo -e "${RED}Run with sudo: sudo kmpanel reset${NC}"
+        echo -e "${RED}Run: sudo kmpanel reset${NC}"
         exit 1
     fi
     NEW_PASS=$(openssl rand -base64 9 2>/dev/null || python3 -c "import secrets,string;print(''.join(secrets.choice(string.ascii_letters+string.digits)for _ in range(12)))")
     echo "${USERNAME}:${NEW_PASS}" > "$CREDS_FILE"
     chmod 600 "$CREDS_FILE"
     echo ""
-    echo -e "${GREEN}  Password reset!${NC}"
-    echo -e "  ${BOLD}New Password:${NC}  ${NEW_PASS}"
+    echo -e "${GREEN}Password reset!${NC}"
+    echo -e "  New: ${NEW_PASS}"
     echo ""
     systemctl restart simple-panel 2>/dev/null
-    echo -e "${GREEN}  Panel restarted.${NC}"
-    echo ""
-}
-
-restart_panel() {
-    if [[ $EUID -ne 0 ]]; then
-        echo -e "${RED}Run with sudo: sudo kmpanel restart${NC}"
-        exit 1
-    fi
-    systemctl restart simple-panel 2>/dev/null
-    sleep 1
-    if systemctl is-active --quiet simple-panel 2>/dev/null; then
-        echo -e "${GREEN}Panel restarted successfully.${NC}"
-    else
-        echo -e "${RED}Panel failed to start!${NC}"
-    fi
 }
 
 case "${1:-status}" in
     status|s) show_status ;;
-    reset|reset-password|rp) reset_password ;;
+    reset|rp) reset_password ;;
     url|u) echo "http://${HOST}:${PORT}" ;;
-    restart|r) restart_panel ;;
-    help|--help|-h)
-        echo ""
-        echo "  KMPanel CLI v4"
-        echo "  kmpanel           Show status, URL, credentials"
-        echo "  kmpanel reset     Reset password (needs sudo)"
-        echo "  kmpanel url       Print panel URL"
-        echo "  kmpanel restart   Restart panel (needs sudo)"
-        echo ""
+    restart|r)
+        [[ $EUID -ne 0 ]] && { echo "Run: sudo kmpanel restart"; exit 1; }
+        systemctl restart simple-panel 2>/dev/null && echo "Restarted"
         ;;
-    *) echo -e "${RED}Unknown: $1${NC}"; echo "Run 'kmpanel help'" ;;
+    help|-h|--help)
+        echo "kmpanel | kmpanel reset | kmpanel url | kmpanel restart"
+        ;;
+    *) echo "Unknown: $1 — try 'kmpanel help'" ;;
 esac
 CLIEOF
 chmod +x /usr/local/bin/kmpanel
@@ -281,7 +256,7 @@ systemctl start simple-panel
 sleep 3
 
 if systemctl is-active --quiet simple-panel; then
-    curl -s --connect-timeout 5 "http://127.0.0.1:${PANEL_PORT}/health" 2>/dev/null | grep -q '"ok"' && log_ok "Panel is running and responding" || log_warn "Service active but health check failed"
+    curl -s --connect-timeout 5 "http://127.0.0.1:${PANEL_PORT}/health" 2>/dev/null | grep -q '"ok"' && log_ok "Panel is running" || log_warn "Health check skipped"
 
     if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
         ufw allow ${PANEL_PORT}/tcp 2>/dev/null
@@ -290,23 +265,22 @@ if systemctl is-active --quiet simple-panel; then
 
     echo ""
     echo -e "${GREEN}  ==========================================${NC}"
-    echo -e "${GREEN}     KMPANEL v4 INSTALLED SUCCESSFULLY${NC}"
+    echo -e "${GREEN}     KMPANEL v4 INSTALLED!${NC}"
     echo -e "${GREEN}  ==========================================${NC}"
     echo ""
-    echo -e "  ${BOLD}Login URL:${NC}  ${CYAN}http://${HOST}:${PANEL_PORT}${NC}"
+    echo -e "  ${BOLD}URL:${NC}       ${CYAN}http://${HOST}:${PANEL_PORT}${NC}"
     echo -e "  ${BOLD}Username:${NC}   ${PANEL_USER}"
     echo -e "  ${BOLD}Password:${NC}   ${PANEL_PASS}"
     echo ""
-    echo -e "  ${BOLD}CLI:${NC}  kmpanel  |  sudo kmpanel reset  |  kmpanel url"
+    echo -e "  ${BOLD}Commands:${NC}  kmpanel  |  sudo kmpanel reset  |  kmpanel url"
     echo ""
 
     if ! command -v ufw &>/dev/null || ! ufw status 2>/dev/null | grep -q "Status: active"; then
-        log_warn "Make sure port ${PANEL_PORT}/tcp is open in your cloud firewall"
+        log_warn "Ensure port ${PANEL_PORT}/tcp is open in cloud firewall"
         echo ""
     fi
 else
-    echo ""
-    echo -e "${RED}  PANEL FAILED TO START${NC}"
+    echo -e "${RED}PANEL FAILED TO START${NC}"
     journalctl -u simple-panel -n 20 --no-pager 2>/dev/null || true
     echo ""
     exit 1
