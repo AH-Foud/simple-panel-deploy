@@ -8,7 +8,7 @@ log_warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 log_err()   { echo -e "${RED}[X]${NC} $1"; }
 
 REPO_RAW="https://raw.githubusercontent.com/AH-Foud/simple-panel-deploy/main"
-LOGO_URL="https://app.zaro.ai/api/files/download?fid=551bfdfb-63cc-4d2b-adfc-da922a267522&exp=1785513370&sig=ocCeSt9o7nmkzEMvjW1YTQ"
+LOGO_URL="https://app.zaro.ai/api/files/download?fid=551bfdfb-63cc-4d2b-adfc-da922a267522&exp=1785513868&sig=DJ6xcUt0yHSzPbLlbQ0buA"
 
 echo ""
 echo -e "${CYAN}  KMPanel Deploy v5${NC}"
@@ -76,7 +76,7 @@ curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/server.py" "${REPO_RAW}/
 log_ok "Server downloaded"
 
 log_info "Downloading logo..."
-curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/static/logo.png" "${LOGO_URL}" 2>/dev/null && log_ok "Logo OK" || log_warn "Logo skipped"
+curl -s --connect-timeout 10 --max-time 30 -o "$APP_DIR/static/logo.png" "${LOGO_URL}" 2>/dev/null && log_ok "Logo OK" || log_warn "Logo skipped — will show text only"
 
 python3 -c "import py_compile;py_compile.compile('$APP_DIR/server.py',doraise=True)" 2>/dev/null && log_ok "Syntax OK" || { log_err "Syntax error"; exit 1; }
 
