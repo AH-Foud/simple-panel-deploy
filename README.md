@@ -1,18 +1,21 @@
-# Simple Panel Deploy v2
+# KMPanel Deploy v3
 
-**One command → a beautiful web panel on your Linux VPS.**
+**One command → a login-protected web dashboard on your Linux VPS.**
 
-Zero dependencies. Pure Python 3 standard library. Always works.
+Zero dependencies. Pure Python 3 standard library. Includes the `kmpanel` CLI tool for managing credentials from the terminal.
 
 ## Features
 
-- **Auto-detects** VPS IP using multiple services (manual fallback available)
+- **Login page** — username/password authentication with session management
+- **Session cookies** — secure HttpOnly cookies, 24h timeout
+- **Modern UI** — glassmorphism design with gradient backgrounds
+- **Auto-detects** VPS IP using 4 services (manual fallback available)
 - **IP or Subdomain** access modes
 - **Random high port** assignment (15000–55000)
-- **Glassmorphism UI** with live uptime counter
 - **Systemd service** — auto-start on boot, restart on crash
 - **UFW integration** — auto-opens firewall port
-- **Zero dependencies** — only Python 3 required (pre-installed on Ubuntu)
+- **`kmpanel` CLI** — view/reset credentials from terminal
+- **Zero dependencies** — only Python 3 required
 
 ## Quick Install
 
@@ -22,27 +25,29 @@ sudo bash -c "$(curl -s https://raw.githubusercontent.com/AH-Foud/simple-panel-d
 
 ## Requirements
 
-- Ubuntu / Debian (any version with Python 3)
+- Ubuntu / Debian
 - Root (sudo) access
 - Python 3 (installed automatically if missing)
 
-## What It Does
+## kmpanel CLI
 
-1. Detects VPS IP (4 services + manual fallback)
-2. Asks: IP or subdomain?
-3. If subdomain → DNS setup warning (especially Cloudflare)
-4. Assigns random port
-5. Creates Python HTTP server using stdlib
-6. Sets up systemd service
-7. Starts and verifies the panel
+After installation, use the `kmpanel` command from anywhere:
+
+```bash
+kmpanel                 # Show status, URL, username & password
+kmpanel reset           # Reset password (needs sudo)
+kmpanel url             # Print the panel URL only
+kmpanel restart         # Restart the panel service
+kmpanel help            # Show help
+```
 
 ## Access
 
-```
-http://<IP_OR_DOMAIN>:<PORT>
-```
+Open the URL shown after installation in your browser. You'll see a **login page**:
 
-The panel shows hostname, IP, port, and live uptime. A `/health` endpoint returns JSON status.
+1. Enter the username and password shown during install
+2. After login, you'll see the dashboard with system info and uptime
+3. Sessions last 24 hours
 
 ## Cloudflare Note
 
@@ -62,6 +67,9 @@ journalctl -u simple-panel -f    # live logs
 | Path | Purpose |
 |------|---------|
 | `/opt/simple-panel/server.py` | The panel server |
+| `/opt/simple-panel/.credentials` | Username & password (root-only) |
+| `/opt/simple-panel/.config` | Host & port config |
+| `/usr/local/bin/kmpanel` | CLI management tool |
 | `/etc/systemd/system/simple-panel.service` | Systemd unit |
 
 ## License
